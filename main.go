@@ -5,6 +5,7 @@ import (
     "fmt"
     "os"
     "os/exec"
+    "regexp"
     "strings"
 )
 
@@ -31,7 +32,9 @@ func parseLine(line string) {
             Git.branch = "master"
             Git.commit = "init"
         } else {
-            Git.branch = inf[1]
+            re := regexp.MustCompile("([a-zA-Z0-9]+)").FindAllString(inf[1], -1)
+            Git.branch = re[0]
+            Git.remote = re[1]
             // todo:
             // parse remote, ahead, behind
         }
@@ -78,8 +81,8 @@ func readGitStdout(scanner *bufio.Scanner, stop chan bool) {
 }
 
 func shellOutput() {
-    //fmt.Printf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v\n",
-    fmt.Printf("commit: %v\nbranch: %v\nremote: %v\nahead: %v\nbehind: %v\nuntr %v\nadd %v\nmod %v\ndel %v\nren %v\ncop %v\n",
+    fmt.Printf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v\n",
+        //fmt.Printf("commit: %v\nbranch: %v\nremote: %v\nahead: %v\nbehind: %v\nuntr %v\nadd %v\nmod %v\ndel %v\nren %v\ncop %v\n",
         Git.commit,
         Git.branch,
         Git.remote,
@@ -95,22 +98,31 @@ func shellOutput() {
 
 func main() {
     cmd := exec.Command("/usr/local/bin/git", "status", "--porcelain", "--branch")
-    stdout, err := cmd.StdoutPipe()
+    cmd2 := exec.Command("/usr/local/bin/git", "rev-parse", "--short", "HEAD")
 
+    stdout, err := cmd.StdoutPipe()
+    // catch pipe errors
     if err != nil {
         fmt.Fprintln(os.Stderr, "[!]", err)
         return
     }
+
+    // fork child
+    // catch fork errors
     if err := cmd.Start(); err != nil {
         fmt.Fprintln(os.Stderr, "[!]", err)
         return
     }
-
-    scanner := bufio.NewScanner(stdout)
-    fmt.Println("Opened Pipe. Waiting for git...")
+    // commit
+    out, err := cmd2.Output()
+    if err != nil {
+        fmt.Fprintln(os.Stderr, "[!]", err)
+        return
+    }
+    Git.commit = strings.TrimSuffix(string(out), "\n")
 
     stop := make(chan bool)
-    go readGitStdout(scanner, stop)
+    go readGitStdout(bufio.NewScanner(stdout), stop)
     <-stop
     cmd.Wait()
 
