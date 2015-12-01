@@ -6,6 +6,7 @@ import (
     "os"
     "os/exec"
     "regexp"
+    "strconv"
     "strings"
 )
 
@@ -24,6 +25,15 @@ var Git struct {
     unmerged  int // U
 }
 
+func SliceContains(sl []string, cmp string) int {
+    for i, a := range sl {
+        if a == cmp {
+            return i
+        }
+    }
+    return -1
+}
+
 func parseLine(line string) {
     inf := strings.Fields(line)
     if strings.Contains(inf[0], "#") {
@@ -32,11 +42,15 @@ func parseLine(line string) {
             Git.branch = "master"
             Git.commit = "init"
         } else {
-            re := regexp.MustCompile("([a-zA-Z0-9]+)").FindAllString(inf[1], -1)
+            re := regexp.MustCompile("([a-zA-Z0-9]+)").FindAllString(line, -1)
             Git.branch = re[0]
             Git.remote = re[1]
-            // todo:
-            // parse remote, ahead, behind
+            if i := SliceContains(re, "ahead"); i != -1 {
+                Git.ahead, _ = strconv.Atoi(re[i+1])
+            }
+            if i := SliceContains(re, "behind"); i != -1 {
+                Git.behind, _ = strconv.Atoi(re[i+1])
+            }
         }
     }
     if strings.Contains(inf[0], "?") {
