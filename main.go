@@ -2,6 +2,7 @@ package main
 
 import (
     "bufio"
+    "flag"
     "fmt"
     "os"
     "os/exec"
@@ -42,7 +43,7 @@ func parseLine(line string) {
             Git.branch = "master"
             Git.commit = "init"
         } else {
-            re := regexp.MustCompile("([a-zA-Z0-9]+)").FindAllString(line, -1)
+            re := regexp.MustCompile("([a-zA-Z0-9-_]+)").FindAllString(line, -1)
             Git.branch = re[0]
             Git.remote = re[1]
             if i := SliceContains(re, "ahead"); i != -1 {
@@ -96,7 +97,21 @@ func readGitStdout(scanner *bufio.Scanner, stop chan bool) {
 
 func shellOutput() {
     fmt.Printf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v\n",
-        //fmt.Printf("commit: %v\nbranch: %v\nremote: %v\nahead: %v\nbehind: %v\nuntr %v\nadd %v\nmod %v\ndel %v\nren %v\ncop %v\n",
+        Git.commit,
+        Git.branch,
+        Git.remote,
+        Git.ahead,
+        Git.behind,
+        Git.untracked,
+        Git.added,
+        Git.modified,
+        Git.deleted,
+        Git.renamed,
+        Git.copied)
+}
+
+func debugOutput() {
+    fmt.Printf("commit:\t%v\nbranch:\t%v\nremote:\t%v\nahead:\t%v\nbehind:\t%v\nuntr:\t%v\nadd:\t%v\nmod:\t%v\ndel:\t%v\nren:\t%v\ncop:\t%v\n",
         Git.commit,
         Git.branch,
         Git.remote,
@@ -111,6 +126,9 @@ func shellOutput() {
 }
 
 func main() {
+    debug := flag.Bool("debug", false, "print output for debugging")
+    flag.Parse()
+
     cmd := exec.Command("/usr/local/bin/git", "status", "--porcelain", "--branch")
     cmd2 := exec.Command("/usr/local/bin/git", "rev-parse", "--short", "HEAD")
 
@@ -140,6 +158,11 @@ func main() {
     <-stop
     cmd.Wait()
 
-    shellOutput()
-    // fmt.Println(Git)
+    // print debug output if -debug flag is set
+    if *debug == false {
+        shellOutput()
+    } else {
+        fmt.Printf("go-gitparser v1.1 Debug mode:\n\n%v\n", Git)
+        debugOutput()
+    }
 }
