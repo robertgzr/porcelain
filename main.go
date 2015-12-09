@@ -44,8 +44,12 @@ func parseLine(line string) {
             Git.commit = "init"
         } else {
             re := regexp.MustCompile("([a-zA-Z0-9-_]+)").FindAllString(line, -1)
-            Git.branch = re[0]
-            Git.remote = re[1]
+            if re[0] != "" {
+                Git.branch = re[0]
+            }
+            if re[1] != "" {
+                Git.remote = re[1]
+            }
             if i := SliceContains(re, "ahead"); i != -1 {
                 Git.ahead, _ = strconv.Atoi(re[i+1])
             }
