@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+const gitbin string = "/usr/bin/git"
+
 var Git struct {
 	branch    string
 	commit    string
@@ -26,7 +28,7 @@ var Git struct {
 	unmerged  int // U
 }
 
-func SliceContains(sl []string, cmp string) int {
+func sliceContains(sl []string, cmp string) int {
 	for i, a := range sl {
 		if a == cmp {
 			return i
@@ -48,10 +50,10 @@ func parseLine(line string) {
 			if len(re) >= 2 {
 				Git.remote = re[1] + "/" + re[2]
 			}
-			if i := SliceContains(re, "ahead"); i != -1 {
+			if i := sliceContains(re, "ahead"); i != -1 {
 				Git.ahead, _ = strconv.Atoi(re[i+1])
 			}
-			if i := SliceContains(re, "behind"); i != -1 {
+			if i := sliceContains(re, "behind"); i != -1 {
 				Git.behind, _ = strconv.Atoi(re[i+1])
 			}
 		}
@@ -131,8 +133,8 @@ func main() {
 	debug := flag.Bool("debug", false, "print output for debugging")
 	flag.Parse()
 
-	cmd := exec.Command("/usr/local/bin/git", "status", "--porcelain", "--branch")
-	cmd2 := exec.Command("/usr/local/bin/git", "rev-parse", "--short", "HEAD")
+	cmd := exec.Command(gitbin, "status", "--porcelain", "--branch")
+	cmd2 := exec.Command(gitbin, "rev-parse", "--short", "HEAD")
 
 	stdout, err := cmd.StdoutPipe()
 	// catch pipe errors
