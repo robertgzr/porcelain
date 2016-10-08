@@ -318,7 +318,7 @@ func execStatus() {
 
 func init() {
 	flag.BoolVar(&debugFlag, "debug", false, "print output for debugging")
-	flag.BoolVar(&basicFlag, "basic", false, "print old basic number output")
+	flag.BoolVar(&basicFlag, "basic", false, "print basic number output")
 	flag.BoolVar(&fmtFlag, "fmt", false, "print formatted output")
 	flag.Parse()
 }

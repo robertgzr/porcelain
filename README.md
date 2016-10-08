@@ -3,13 +3,13 @@ GO-GITPARSER
 
 A `git status --porcelain` parser.
 
-**Formatted output with `go-gitparser -fmt`**
+**Formatted output with `porcelain -fmt`**
 
 ![formatted output screenshot](fmt_output.png)
 
 ![formatted output screenshot 2](fmt_output2.png)
 
-**Basic output with `go-gitparser -basic`**
+**Basic output with `porcelain -basic`**
 
 ![basic output screenshot](basic_output.png)
 
