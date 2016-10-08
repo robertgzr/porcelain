@@ -16,3 +16,9 @@ Parses `git status --porcelain` and outputs nicely formatted strings.
 ```
    commit,branch,tracked_branch,ahead,behind,untracked,added,modified,deleted,renamed,copied
 ```
+
+---
+
+The screenshots use:
+* [Solarized Dark](http://ethanschoonover.com/solarized) colorscheme
+* [Iosevka](https://github.com/be5invis/Iosevka) font
