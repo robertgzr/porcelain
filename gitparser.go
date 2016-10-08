@@ -9,24 +9,39 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 const gitbin string = "/usr/bin/git"
 
-var Git struct {
-	branch    string
-	commit    string
-	remote    string
-	ahead     int
-	behind    int
+var (
+	debugFlag, basicFlag, fmtFlag bool
+
+	gitrevparse = []string{"rev-parse", "--short", "HEAD"}
+	gitstatus   = []string{"status", "--porcelain", "--branch"}
+)
+
+type gitinfo struct {
+	branch        string
+	commit        string
+	remote        string
+	trackedBranch string
+	ahead         int
+	behind        int
+
 	untracked int // ?
-	added     int // A
-	modified  int // M
-	deleted   int // D
-	renamed   int // R
-	copied    int // C
-	unmerged  int // U
+	dirty     int // changes not in index
+
+	modified int
+	added    int
+	deleted  int
+	renamed  int
+	copied   int
+	unmerged int // diff flag
 }
+
+var Git gitinfo
 
 func sliceContains(sl []string, cmp string) int {
 	for i, a := range sl {
@@ -37,54 +52,114 @@ func sliceContains(sl []string, cmp string) int {
 	return -1
 }
 
-func parseLine(line string) {
-	inf := strings.Fields(line)
-	if strings.Contains(inf[0], "#") {
-		// branch info
-		if strings.Contains(line, "Initial") {
-			Git.branch = "master"
-			Git.commit = "init"
-		} else {
-			re := regexp.MustCompile("([a-zA-Z0-9-_]+)").FindAllString(line, -1)
-			Git.branch = re[0]
-			if len(re) >= 2 {
-				Git.remote = re[1] + "/" + re[2]
-			}
-			if i := sliceContains(re, "ahead"); i != -1 {
-				Git.ahead, _ = strconv.Atoi(re[i+1])
-			}
-			if i := sliceContains(re, "behind"); i != -1 {
-				Git.behind, _ = strconv.Atoi(re[i+1])
-			}
+func parseBranchinfo(s string) {
+	var (
+		matchBranch  []string
+		matchDiffers []string
+		err          error
+	)
+
+	reBranchOrigin := regexp.MustCompile("\\s([a-zA-Z0-9-_\\.]+)(?:\\.\\.\\.)([a-zA-Z0-9-_\\.]+)\\/([a-zA-Z0-9-_\\.]+)(.*)|([a-zA-Z0-9-_\\.]+)$")
+	matchBranch = reBranchOrigin.FindStringSubmatch(s)
+
+	if matchBranch[2] != "" {
+		Git.branch = matchBranch[1]
+		Git.remote = matchBranch[2]
+		Git.trackedBranch = matchBranch[2] + "/" + matchBranch[3]
+	} else {
+		Git.branch = matchBranch[5]
+		Git.remote = "-"
+		Git.trackedBranch = "-"
+	}
+
+	// match ahead/behind part
+	reDiffers := regexp.MustCompile("[0-9]+")
+	matchDiffers = reDiffers.FindAllString(matchBranch[4], 2)
+
+	switch len(matchDiffers) {
+	case 2:
+		Git.behind, err = strconv.Atoi(matchDiffers[1])
+		if err != nil {
+			panic(err)
 		}
+		fallthrough
+	case 1:
+		Git.ahead, err = strconv.Atoi(matchDiffers[0])
+		if err != nil {
+			panic(err)
+		}
+	default:
+		Git.behind = 0
+		Git.ahead = 0
 	}
-	if strings.Contains(inf[0], "?") {
-		// untracked files
+}
+
+func parseLine(line string) {
+	switch line[:2] {
+
+	// match branch and origin
+	case "##":
+		parseBranchinfo(line)
+
+	// untracked files
+	case "??":
 		Git.untracked++
-	}
-	if strings.Contains(inf[0], "A") {
-		// added files
-		Git.added++
-	}
-	if strings.Contains(inf[0], "M") {
-		// modified files
+
+	case "MM":
+		fallthrough
+	case "AM":
+		fallthrough
+	case "RM":
+		fallthrough
+	case "CM":
+		fallthrough
+	case " M":
 		Git.modified++
-	}
-	if strings.Contains(inf[0], "D") {
-		// deleted files
+		Git.dirty++
+
+	case "MD":
+		fallthrough
+	case "AD":
+		fallthrough
+	case "RD":
+		fallthrough
+	case "CD":
+		fallthrough
+	case " D":
 		Git.deleted++
-	}
-	if strings.Contains(inf[0], "R") {
-		// renamed files
+		Git.dirty++
+
+	// changes in the index
+	case "M ":
+		Git.modified++
+	case "A ":
+		Git.added++
+	case "D ":
+		Git.deleted++
+	case "R ":
 		Git.renamed++
-	}
-	if strings.Contains(inf[0], "C") {
-		// copied files
+	case "C ":
 		Git.copied++
-	}
-	if strings.Contains(inf[0], "U") {
-		// unmerged files
+
+	case "DD":
+		fallthrough
+	case "AU":
+		fallthrough
+	case "UD":
+		fallthrough
+	case "UA":
+		fallthrough
+	case "DU":
+		fallthrough
+	case "AA":
+		fallthrough
+	case "UU":
 		Git.unmerged++
+
+	// catch everything else
+	default:
+		fmt.Println(line)
+		panic("unexpected input.")
 	}
 }
 
@@ -99,11 +174,11 @@ func readGitStdout(scanner *bufio.Scanner, stop chan bool) {
 	stop <- true
 }
 
-func shellOutput() {
+func basicOutput() {
 	fmt.Printf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v\n",
 		Git.commit,
 		Git.branch,
-		Git.remote,
+		Git.trackedBranch,
 		Git.ahead,
 		Git.behind,
 		Git.untracked,
@@ -115,58 +190,153 @@ func shellOutput() {
 }
 
 func debugOutput() {
-	fmt.Printf("commit:\t%v\nbranch:\t%v\nremote:\t%v\nahead:\t%v\nbehind:\t%v\nuntr:\t%v\nadd:\t%v\nmod:\t%v\ndel:\t%v\nren:\t%v\ncop:\t%v\n",
-		Git.commit,
-		Git.branch,
-		Git.remote,
-		Git.ahead,
-		Git.behind,
-		Git.untracked,
-		Git.added,
-		Git.modified,
-		Git.deleted,
-		Git.renamed,
-		Git.copied)
+	fmt.Printf("%+v\n", Git)
 }
 
-func main() {
-	debug := flag.Bool("debug", false, "print output for debugging")
-	flag.Parse()
+func formattedOutput() {
+	var (
+		branchGlyph    string = ""
+		modifiedGlyph  string = "Δ"
+		deletedGlyph   string = "＊"
+		dirtyGlyph     string = "✘"
+		cleanGlyph     string = "✔"
+		untrackedGlyph string = "?"
+		unmergedGlyph  string = "‼"
+		aheadArrow     string = "↑"
+		behindArrow    string = "↓"
+	)
 
-	cmd := exec.Command(gitbin, "status", "--porcelain", "--branch")
-	cmd2 := exec.Command(gitbin, "rev-parse", "--short", "HEAD")
+	branchFmt := color.New(color.FgHiBlue).SprintFunc()
+	commitFmt := color.New(color.FgHiGreen, color.Italic).SprintFunc()
 
+	aheadFmt := color.New(color.Faint, color.BgCyan, color.FgBlack).SprintFunc()
+	behindFmt := color.New(color.Faint, color.BgHiRed, color.FgWhite).SprintFunc()
+
+	modifiedFmt := color.New(color.FgBlue).SprintFunc()
+	deletedFmt := color.New(color.FgYellow).SprintFunc()
+	dirtyFmt := color.New(color.FgHiRed).SprintFunc()
+	cleanFmt := color.New(color.FgGreen).SprintFunc()
+
+	untrackedFmt := color.New(color.Faint).SprintFunc()
+	unmergedFmt := color.New(color.BgMagenta, color.FgHiWhite).SprintFunc()
+
+	fmt.Printf("%s %s@%s %s%s %s%s %s%s %s",
+		branchGlyph,
+		branchFmt(Git.branch),
+		commitFmt(Git.commit),
+		//ahead/behind
+		func(n int) string {
+			if n > 0 {
+				return aheadFmt(" ", aheadArrow, n, " ")
+			} else {
+				return ""
+			}
+		}(Git.ahead),
+		func(n int) string {
+			if n > 0 {
+				return behindFmt(" ", behindArrow, n, " ")
+			} else {
+				return ""
+			}
+		}(Git.behind),
+		// stats
+		// untracked
+		func(n int) string {
+			if n > 0 {
+				return untrackedFmt(untrackedGlyph)
+			} else {
+				return ""
+			}
+		}(Git.untracked),
+		// unmerged
+		func(n int) string {
+			if n > 0 {
+				return unmergedFmt(unmergedGlyph)
+			} else {
+				return ""
+			}
+		}(Git.unmerged),
+		// modi
+		func(n int) string {
+			if n > 0 {
+				return modifiedFmt(modifiedGlyph)
+			} else {
+				return ""
+			}
+		}(Git.modified),
+		// del
+		func(n int) string {
+			if n > 0 {
+				return deletedFmt(deletedGlyph)
+			} else {
+				return ""
+			}
+		}(Git.deleted),
+		// dirty/clean
+		func(n int) string {
+			if n > 0 {
+				return dirtyFmt(dirtyGlyph)
+			} else {
+				return cleanFmt(cleanGlyph)
+			}
+		}(Git.dirty),
+	)
+}
+
+func execRevParse() string {
+	// commit
+	cmd := exec.Command(gitbin, gitrevparse...)
+	out, err := cmd.Output()
+	if err != nil {
+		if strings.Contains(err.Error(), "128") {
+			return "initial"
+		} else {
+			panic(err)
+		}
+	}
+
+	return string(out)
+}
+
+func execStatus() {
+	cmd := exec.Command(gitbin, gitstatus...)
 	stdout, err := cmd.StdoutPipe()
 	// catch pipe errors
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "[!]", err)
-		return
+		panic(err)
 	}
-
-	// fork child
-	// catch fork errors
 	if err := cmd.Start(); err != nil {
-		fmt.Fprintln(os.Stderr, "[!]", err)
-		return
+		panic(err)
 	}
-	// commit
-	out, err := cmd2.Output()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "[!]", err)
-		return
-	}
-	Git.commit = strings.TrimSuffix(string(out), "\n")
 
 	stop := make(chan bool)
 	go readGitStdout(bufio.NewScanner(stdout), stop)
 	<-stop
 	cmd.Wait()
 
-	// print debug output if -debug flag is set
-	if *debug == false {
-		shellOutput()
-	} else {
-		fmt.Printf("go-gitparser v1.1 Debug mode:\n\n%v\n", Git)
+}
+
+func init() {
+	flag.BoolVar(&debugFlag, "debug", false, "print output for debugging")
+	flag.BoolVar(&basicFlag, "basic", false, "print old basic number output")
+	flag.BoolVar(&fmtFlag, "fmt", false, "print formatted output")
+	flag.Parse()
+}
+
+func main() {
+	out := execRevParse()
+	Git.commit = strings.TrimSuffix(string(out), "\n")
+
+	execStatus()
+
+	switch {
+	case debugFlag:
 		debugOutput()
+	case basicFlag:
+		basicOutput()
+	case fmtFlag:
+		formattedOutput()
+	default:
+		flag.Usage()
 	}
 }
