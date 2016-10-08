@@ -7,6 +7,8 @@ A `git status --porcelain` parser.
 
 ![formatted output screenshot](fmt_output.png)
 
+![formatted output screenshot 2](fmt_output2.png)
+
 **Basic output with `go-gitparser -basic`**
 
 ![basic output screenshot](basic_output.png)
