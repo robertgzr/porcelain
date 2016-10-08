@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/robertgzr/color"
 )
 
 const gitbin string = "/usr/bin/git"
@@ -206,6 +206,9 @@ func formattedOutput() {
 		behindArrow    string = "↓"
 	)
 
+	color.NoColor = false
+	color.EscapeZshPrompt = true
+
 	branchFmt := color.New(color.FgHiBlue).SprintFunc()
 	commitFmt := color.New(color.FgHiGreen, color.Italic).SprintFunc()
 
@@ -283,19 +286,22 @@ func formattedOutput() {
 	)
 }
 
-func execRevParse() string {
+func execRevParse() (string, error) {
 	// commit
 	cmd := exec.Command(gitbin, gitrevparse...)
 	out, err := cmd.Output()
 	if err != nil {
-		if strings.Contains(err.Error(), "128") {
-			return "initial"
-		} else {
-			panic(err)
-		}
+		// if strings.Contains(err.Error(), "128") {
+		// 	return "initial"
+		// } else {
+		// 	panic(err)
+		// }
+		return "initial", err
+		// TODO: would be nice to be able to differentiate between not in git and before
+		// first commit
 	}
 
-	return string(out)
+	return string(out), nil
 }
 
 func execStatus() {
@@ -324,7 +330,10 @@ func init() {
 }
 
 func main() {
-	out := execRevParse()
+	out, err := execRevParse()
+	if err != nil {
+		return
+	}
 	Git.commit = strings.TrimSuffix(string(out), "\n")
 
 	execStatus()
