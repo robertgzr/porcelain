@@ -1,7 +1,7 @@
-GO-GITPARSER
+porcelain
 ============
 
-A `git status --porcelain` parser.
+Parses `git status --porcelain` and outputs nicely formatted strings.
 
 **Formatted output with `porcelain -fmt`**
 
