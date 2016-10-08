@@ -3,13 +3,14 @@ GO-GITPARSER
 
 A `git status --porcelain` parser.
 
+**Formatted output with `go-gitparser -fmt`**
+
+![formatted output screenshot](fmt_output.png)
+
+**Basic output with `go-gitparser -basic`**
+
+![basic output screenshot](basic_output.png)
+
 ```
-Usage:
-	go-gitparser [-debug]
-
-Returns:
-	A comma seperated list with the essential output of the `git status` command.
-
-Arguments:
-	-debug	Makes the output readable
+   commit,branch,tracked_branch,ahead,behind,untracked,added,modified,deleted,renamed,copied
 ```
