@@ -158,8 +158,8 @@ func parseLine(line string) {
 
 	// catch everything else
 	default:
-		fmt.Println(line)
-		panic("unexpected input.")
+		fmt.Fprintln(os.Stderr, line)
+		fmt.Fprintln(os.Stderr, "I don't know this")
 	}
 }
 
