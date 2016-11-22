@@ -54,43 +54,49 @@ func sliceContains(sl []string, cmp string) int {
 
 func parseBranchinfo(s string) {
 	var (
-		matchBranch  []string
+		matchDefault []string
 		matchDiffers []string
 		err          error
 	)
 
-	reBranchOrigin := regexp.MustCompile("\\s([a-zA-Z0-9-_\\.]+)(?:\\.\\.\\.)([a-zA-Z0-9-_\\.]+)\\/([a-zA-Z0-9-_\\.]+)(.*)|([a-zA-Z0-9-_\\.]+)$")
-	matchBranch = reBranchOrigin.FindStringSubmatch(s)
+	reDefault := regexp.MustCompile("\\s([a-zA-Z0-9-_\\.]+)(?:\\.\\.\\.)([a-zA-Z0-9-_\\.]+)\\/([a-zA-Z0-9-_\\.]+)(.*)|([a-zA-Z0-9-_\\.]+)$")
+	matchDefault = reDefault.FindStringSubmatch(s)
 
-	if matchBranch[2] != "" {
-		Git.branch = matchBranch[1]
-		Git.remote = matchBranch[2]
-		Git.trackedBranch = matchBranch[2] + "/" + matchBranch[3]
+	if matchDefault == nil {
+
+		reCatch := regexp.MustCompile("\\s([a-zA-Z0-9-_\\.]+)\\s(?:\\W[\\w\\s]*\\W)")
+		matchDefault = reCatch.FindStringSubmatch(s)
+		Git.commit = matchDefault[1]
+
 	} else {
-		Git.branch = matchBranch[5]
-		Git.remote = "-"
-		Git.trackedBranch = "-"
-	}
 
-	// match ahead/behind part
-	reDiffers := regexp.MustCompile("[0-9]+")
-	matchDiffers = reDiffers.FindAllString(matchBranch[4], 2)
+		if matchDefault[2] != "" {
+			Git.branch = matchDefault[1]
+			Git.remote = matchDefault[2]
+			Git.trackedBranch = matchDefault[2] + "/" + matchDefault[3]
+		} else {
+			Git.branch = matchDefault[5]
+		}
 
-	switch len(matchDiffers) {
-	case 2:
-		Git.behind, err = strconv.Atoi(matchDiffers[1])
-		if err != nil {
-			panic(err)
+		// match ahead/behind part
+		reDiffers := regexp.MustCompile("[0-9]+")
+		matchDiffers = reDiffers.FindAllString(matchDefault[4], 2)
+		switch len(matchDiffers) {
+		case 2:
+			Git.behind, err = strconv.Atoi(matchDiffers[1])
+			if err != nil {
+				panic(err)
+			}
+			fallthrough
+		case 1:
+			Git.ahead, err = strconv.Atoi(matchDiffers[0])
+			if err != nil {
+				panic(err)
+			}
+		default:
+			Git.behind = 0
+			Git.ahead = 0
 		}
-		fallthrough
-	case 1:
-		Git.ahead, err = strconv.Atoi(matchDiffers[0])
-		if err != nil {
-			panic(err)
-		}
-	default:
-		Git.behind = 0
-		Git.ahead = 0
 	}
 }
 

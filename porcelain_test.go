@@ -14,10 +14,11 @@ var (
 		"## master...origin/master [ahead 1]",
 		"## master...origin/master [ahead 1, behind 99]",
 		"## Initial commit on master",
+		"## HEAD (no branch)",
 	}
 	branchInfoExpected = []gitinfo{
 		gitinfo{
-			branch: "new2", commit: "", remote: "-", trackedBranch: "-", ahead: 0, behind: 0},
+			branch: "new2", commit: "", remote: "", trackedBranch: "", ahead: 0, behind: 0},
 		gitinfo{
 			branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 0, behind: 0},
 		gitinfo{
@@ -27,7 +28,9 @@ var (
 		gitinfo{
 			branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 1, behind: 99},
 		gitinfo{
-			branch: "master", commit: "", remote: "-", trackedBranch: "-", ahead: 0, behind: 0},
+			branch: "master", commit: "", remote: "", trackedBranch: "", ahead: 0, behind: 0},
+		gitinfo{
+			branch: "", commit: "HEAD", remote: "", trackedBranch: "", ahead: 0, behind: 0},
 	}
 )
 
