@@ -13,7 +13,7 @@ import (
 	"github.com/robertgzr/color"
 )
 
-const gitbin string = "/usr/bin/git"
+const gitbin string = "git"
 
 var (
 	debugFlag, basicFlag, fmtFlag bool
@@ -293,7 +293,7 @@ func formattedOutput() {
 }
 
 func execRevParse() (string, error) {
-	// commit
+	// get commit hash
 	cmd := exec.Command(gitbin, gitrevparse...)
 	out, err := cmd.Output()
 	if err != nil {

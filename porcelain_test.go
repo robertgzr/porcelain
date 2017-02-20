@@ -17,20 +17,13 @@ var (
 		"## HEAD (no branch)",
 	}
 	branchInfoExpected = []gitinfo{
-		gitinfo{
-			branch: "new2", commit: "", remote: "", trackedBranch: "", ahead: 0, behind: 0},
-		gitinfo{
-			branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 0, behind: 0},
-		gitinfo{
-			branch: "0.9", commit: "", remote: "test", trackedBranch: "test/0.9", ahead: 0, behind: 0},
-		gitinfo{
-			branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 1, behind: 0},
-		gitinfo{
-			branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 1, behind: 99},
-		gitinfo{
-			branch: "master", commit: "", remote: "", trackedBranch: "", ahead: 0, behind: 0},
-		gitinfo{
-			branch: "", commit: "HEAD", remote: "", trackedBranch: "", ahead: 0, behind: 0},
+		gitinfo{branch: "new2", commit: "", remote: "", trackedBranch: "", ahead: 0, behind: 0},
+		gitinfo{branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 0, behind: 0},
+		gitinfo{branch: "0.9", commit: "", remote: "test", trackedBranch: "test/0.9", ahead: 0, behind: 0},
+		gitinfo{branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 1, behind: 0},
+		gitinfo{branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 1, behind: 99},
+		gitinfo{branch: "master", commit: "", remote: "", trackedBranch: "", ahead: 0, behind: 0},
+		gitinfo{branch: "", commit: "HEAD", remote: "", trackedBranch: "", ahead: 0, behind: 0},
 	}
 )
 
