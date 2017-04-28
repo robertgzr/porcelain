@@ -66,7 +66,9 @@ func parseBranchinfo(s string) {
 
 		reCatch := regexp.MustCompile("\\s([a-zA-Z0-9-_\\.]+)\\s(?:\\W[\\w\\s]*\\W)")
 		matchDefault = reCatch.FindStringSubmatch(s)
-		Git.commit = matchDefault[1]
+		if matchDefault != nil {
+			Git.commit = matchDefault[1]
+		}
 
 	} else {
 
@@ -298,9 +300,9 @@ func execRevParse() (string, error) {
 	out, err := cmd.Output()
 	if err != nil {
 		// if strings.Contains(err.Error(), "128") {
-		// 	return "initial"
+		//	return "initial"
 		// } else {
-		// 	panic(err)
+		//	panic(err)
 		// }
 		return "initial", err
 		// TODO: would be nice to be able to differentiate between not in git and before
