@@ -1,0 +1,4 @@
+
+[[dependencies]]
+  branch = "prompt-escape"
+  name = "github.com/robertgzr/color"

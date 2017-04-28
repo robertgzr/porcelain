@@ -17,6 +17,10 @@ Parses `git status --porcelain` and outputs nicely formatted strings.
    commit,branch,tracked_branch,ahead,behind,untracked,added,modified,deleted,renamed,copied
 ```
 
+With a working Go environment do: `go get -u github.com/robertgzr/porcelain`
+
+Binaries can be found [here](https://github.com/robertgzr/porcelain/releases).
+
 ---
 
 The screenshots use:
