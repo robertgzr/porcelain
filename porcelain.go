@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -14,8 +15,11 @@ import (
 )
 
 const gitbin string = "git"
+// TODO allow custom log location
+const logloc string = "/tmp/porcelain.log"
 
 var (
+	cwd                           string
 	debugFlag, basicFlag, fmtFlag bool
 
 	gitrevparse = []string{"rev-parse", "--short", "HEAD"}
@@ -87,13 +91,15 @@ func parseBranchinfo(s string) {
 		case 2:
 			Git.behind, err = strconv.Atoi(matchDiffers[1])
 			if err != nil {
-				panic(err)
+				log.Printf("error parsing branch info (behind): %s\n@ %s\n> %s)", err, cwd, s)
+				return
 			}
 			fallthrough
 		case 1:
 			Git.ahead, err = strconv.Atoi(matchDiffers[0])
 			if err != nil {
-				panic(err)
+				log.Printf("error parsing branch info (ahead): %s\n@ %s\n> %s)", err, cwd, s)
+				return
 			}
 		default:
 			Git.behind = 0
@@ -317,10 +323,12 @@ func execStatus() {
 	stdout, err := cmd.StdoutPipe()
 	// catch pipe errors
 	if err != nil {
-		panic(err)
+		log.Printf("error opening stdout pipe: %s\n@ %s\n> %s)", err, cwd, cmd.Args)
+		return
 	}
 	if err := cmd.Start(); err != nil {
-		panic(err)
+		log.Printf("error opening stdout pipe: %s\n@ %s\n> %s)", err, cwd, cmd.Args)
+		return
 	}
 
 	stop := make(chan bool)
@@ -335,6 +343,15 @@ func init() {
 	flag.BoolVar(&basicFlag, "basic", false, "print basic number output")
 	flag.BoolVar(&fmtFlag, "fmt", false, "print formatted output")
 	flag.Parse()
+
+	logFd, err := os.OpenFile(logloc, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
+	if err != nil {
+		os.Exit(1)
+	}
+	log.SetOutput(logFd)
+	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
+
+	cwd, _ = os.Getwd()
 }
 
 func main() {
