@@ -1,45 +1,20 @@
 package main
 
 import (
-	"fmt"
-	"reflect"
+	"strings"
 	"testing"
 )
 
-var (
-	branchInfoStrings = []string{
-		"## new2",
-		"## master...origin/master",
-		"## 0.9...test/0.9",
-		"## master...origin/master [ahead 1]",
-		"## master...origin/master [ahead 1, behind 99]",
-		"## Initial commit on master",
-		"## HEAD (no branch)",
-		"## user/feature...origin/user/feature",
-		"## user/feature...origin/user/feature [ahead 99, behind 5]",
-	}
-	branchInfoExpected = []gitinfo{
-		gitinfo{branch: "new2", commit: "", remote: "", trackedBranch: "", ahead: 0, behind: 0},
-		gitinfo{branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 0, behind: 0},
-		gitinfo{branch: "0.9", commit: "", remote: "test", trackedBranch: "test/0.9", ahead: 0, behind: 0},
-		gitinfo{branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 1, behind: 0},
-		gitinfo{branch: "master", commit: "", remote: "origin", trackedBranch: "origin/master", ahead: 1, behind: 99},
-		gitinfo{branch: "master", commit: "", remote: "", trackedBranch: "", ahead: 0, behind: 0},
-		gitinfo{branch: "", commit: "HEAD", remote: "", trackedBranch: "", ahead: 0, behind: 0},
-		gitinfo{branch: "user/feature", commit: "", remote: "origin", trackedBranch: "user/feature", ahead: 0, behind: 0},
-		gitinfo{branch: "user/feature", commit: "", remote: "origin", trackedBranch: "user/feature", ahead: 99, behind: 5},
-	}
-)
+const expectedDebugOutput string = "&main.PorcInfo{branch:\"master\", commit:\"51c9c58e2175b768137c1e38865f394c76a7d49d\", remote:\"\", upstream:\"origin/master\", ahead:1, behind:10, untracked:5, unmerged:1, Unstaged:main.GitArea{modified:3, added:0, deleted:1, renamed:0, copied:0}, Staged:main.GitArea{modified:0, added:0, deleted:0, renamed:1, copied:0}}"
 
-func TestStatusParser(t *testing.T) {
-	for i, s := range branchInfoStrings {
-		t.Run(fmt.Sprintf("TestStatusParser_%d", i), func(t *testing.T) {
-			parseBranchinfo(s)
-			t.Logf("Parsed... '%s'", s)
-			if !reflect.DeepEqual(branchInfoExpected[i], Git) {
-				t.Fatalf("\n\texp: %+v\n\tgot: %+v", branchInfoExpected[i], Git)
-			}
-			Git = gitinfo{}
-		})
+func TestDebugOutput(t *testing.T) {
+	var pi = new(PorcInfo)
+	if err := pi.ParsePorcInfo(strings.NewReader(gitoutput)); err != nil {
+		t.Fatal(err)
+	}
+
+	if out := pi.Debug(); out != expectedDebugOutput {
+		t.Logf("\nexpected:\n%s\ngot:\n%s\n", expectedDebugOutput, out)
+		t.FailNow()
 	}
 }
