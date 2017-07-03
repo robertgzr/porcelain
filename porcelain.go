@@ -1,217 +1,107 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
-	"regexp"
-	"strconv"
-	"strings"
+	"path"
 
 	"github.com/robertgzr/color"
 )
 
-const gitbin string = "git"
 // TODO allow custom log location
 const logloc string = "/tmp/porcelain.log"
 
 var (
-	cwd                           string
-	debugFlag, basicFlag, fmtFlag bool
-
-	gitrevparse = []string{"rev-parse", "--short", "HEAD"}
-	gitstatus   = []string{"status", "--porcelain", "--branch"}
+	cwd                string
+	debugFlag, fmtFlag bool
 )
 
-type gitinfo struct {
-	branch        string
-	commit        string
-	remote        string
-	trackedBranch string
-	ahead         int
-	behind        int
-
-	untracked int // ?
-	dirty     int // changes not in index
-
+type GitArea struct {
 	modified int
 	added    int
 	deleted  int
 	renamed  int
 	copied   int
-	unmerged int // diff flag
 }
 
-var Git gitinfo
-
-func sliceContains(sl []string, cmp string) int {
-	for i, a := range sl {
-		if a == cmp {
-			return i
-		}
+func (a *GitArea) hasChanged() bool {
+	var changed bool
+	if a.added != 0 {
+		changed = true
 	}
-	return -1
+	if a.deleted != 0 {
+		changed = true
+	}
+	if a.modified != 0 {
+		changed = true
+	}
+	if a.copied != 0 {
+		changed = true
+	}
+	if a.renamed != 0 {
+		changed = true
+	}
+	return changed
 }
 
-func parseBranchinfo(s string) {
-	var (
-		matchDefault []string
-		matchDiffers []string
-		err          error
-	)
+type PorcInfo struct {
+	branch   string
+	commit   string
+	remote   string
+	upstream string
+	ahead    int
+	behind   int
 
-	reDefault := regexp.MustCompile("\\s([a-zA-Z0-9-_\\.]+)(?:\\.\\.\\.)([a-zA-Z0-9-_\\.]+)\\/([a-zA-Z0-9-_\\.]+)(.*)|([a-zA-Z0-9-_\\.]+)$")
-	matchDefault = reDefault.FindStringSubmatch(s)
+	untracked int
+	unmerged  int
 
-	if matchDefault == nil {
+	Unstaged GitArea
+	Staged   GitArea
+}
 
-		reCatch := regexp.MustCompile("\\s([a-zA-Z0-9-_\\.]+)\\s(?:\\W[\\w\\s]*\\W)")
-		matchDefault = reCatch.FindStringSubmatch(s)
-		if matchDefault != nil {
-			Git.commit = matchDefault[1]
+func (pi *PorcInfo) hasUnmerged() bool {
+	if pi.unmerged > 0 {
+		return true
+	}
+	gitDir, err := PathToGitDir(cwd)
+	if err != nil {
+		log.Println(cwd, err)
+		return false
+	}
+	// TODO figure out if output of MERGE_HEAD can be useful
+	if _, err := ioutil.ReadFile(path.Join(gitDir, "MERGE_HEAD")); err != nil {
+		if os.IsNotExist(err) {
+			return false
 		}
-
+		log.Println(err)
+		return false
 	} else {
-
-		if matchDefault[2] != "" {
-			Git.branch = matchDefault[1]
-			Git.remote = matchDefault[2]
-			Git.trackedBranch = matchDefault[2] + "/" + matchDefault[3]
-		} else {
-			Git.branch = matchDefault[5]
-		}
-
-		// match ahead/behind part
-		reDiffers := regexp.MustCompile("[0-9]+")
-		matchDiffers = reDiffers.FindAllString(matchDefault[4], 2)
-		switch len(matchDiffers) {
-		case 2:
-			Git.behind, err = strconv.Atoi(matchDiffers[1])
-			if err != nil {
-				log.Printf("error parsing branch info (behind): %s\n@ %s\n> %s)", err, cwd, s)
-				return
-			}
-			fallthrough
-		case 1:
-			Git.ahead, err = strconv.Atoi(matchDiffers[0])
-			if err != nil {
-				log.Printf("error parsing branch info (ahead): %s\n@ %s\n> %s)", err, cwd, s)
-				return
-			}
-		default:
-			Git.behind = 0
-			Git.ahead = 0
-		}
+		return true
 	}
 }
-
-func parseLine(line string) {
-	switch line[:2] {
-
-	// match branch and origin
-	case "##":
-		parseBranchinfo(line)
-
-	// untracked files
-	case "??":
-		Git.untracked++
-
-	case "MM":
-		fallthrough
-	case "AM":
-		fallthrough
-	case "RM":
-		fallthrough
-	case "CM":
-		fallthrough
-	case " M":
-		Git.modified++
-		Git.dirty++
-
-	case "MD":
-		fallthrough
-	case "AD":
-		fallthrough
-	case "RD":
-		fallthrough
-	case "CD":
-		fallthrough
-	case " D":
-		Git.deleted++
-		Git.dirty++
-
-	// changes in the index
-	case "M ":
-		Git.modified++
-	case "A ":
-		Git.added++
-	case "D ":
-		Git.deleted++
-	case "R ":
-		Git.renamed++
-	case "C ":
-		Git.copied++
-
-	case "DD":
-		fallthrough
-	case "AU":
-		fallthrough
-	case "UD":
-		fallthrough
-	case "UA":
-		fallthrough
-	case "DU":
-		fallthrough
-	case "AA":
-		fallthrough
-	case "UU":
-		Git.unmerged++
-
-	// catch everything else
-	default:
-		fmt.Fprintln(os.Stderr, line)
-		fmt.Fprintln(os.Stderr, "I don't know this")
-	}
+func (pi *PorcInfo) hasModified() bool {
+	return pi.Unstaged.hasChanged()
+}
+func (pi *PorcInfo) isDirty() bool {
+	return pi.Staged.hasChanged()
 }
 
-func readGitStdout(scanner *bufio.Scanner, stop chan bool) {
-	for scanner.Scan() {
-		line := scanner.Text()
-		parseLine(line)
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "[!]", err)
-	}
-	stop <- true
+func (pi *PorcInfo) Debug() string {
+	return fmt.Sprintf("%#+v", pi)
 }
 
-func basicOutput() {
-	fmt.Printf("%v,%v,%v,%v,%v,%v,%v,%v,%v,%v,%v\n",
-		Git.commit,
-		Git.branch,
-		Git.trackedBranch,
-		Git.ahead,
-		Git.behind,
-		Git.untracked,
-		Git.added,
-		Git.modified,
-		Git.deleted,
-		Git.renamed,
-		Git.copied)
-}
-
-func debugOutput() {
-	fmt.Printf("%+v\n", Git)
-}
-
-func formattedOutput() {
+// Fmt formats the output for the shell
+// TODO should be configurable by the user
+//
+func (pi *PorcInfo) Fmt() string {
 	var (
-		branchGlyph    string = ""
-		modifiedGlyph  string = "Δ"
-		deletedGlyph   string = "＊"
+		branchGlyph   string = ""
+		modifiedGlyph string = "Δ"
+		// deletedGlyph   string = "＊"
 		dirtyGlyph     string = "✘"
 		cleanGlyph     string = "✔"
 		untrackedGlyph string = "?"
@@ -223,124 +113,67 @@ func formattedOutput() {
 	color.NoColor = false
 	color.EscapeZshPrompt = true
 
-	branchFmt := color.New(color.FgHiBlue).SprintFunc()
-	commitFmt := color.New(color.FgHiGreen, color.Italic).SprintFunc()
+	branchFmt := color.New(color.FgBlue).SprintFunc()
+	commitFmt := color.New(color.FgGreen, color.Italic).SprintFunc()
 
 	aheadFmt := color.New(color.Faint, color.BgCyan, color.FgBlack).SprintFunc()
-	behindFmt := color.New(color.Faint, color.BgHiRed, color.FgWhite).SprintFunc()
+	behindFmt := color.New(color.Faint, color.BgRed, color.FgWhite).SprintFunc()
 
 	modifiedFmt := color.New(color.FgBlue).SprintFunc()
-	deletedFmt := color.New(color.FgYellow).SprintFunc()
-	dirtyFmt := color.New(color.FgHiRed).SprintFunc()
+	// deletedFmt := color.New(color.FgYellow).SprintFunc()
+	dirtyFmt := color.New(color.FgRed).SprintFunc()
 	cleanFmt := color.New(color.FgGreen).SprintFunc()
 
 	untrackedFmt := color.New(color.Faint).SprintFunc()
-	unmergedFmt := color.New(color.BgMagenta, color.FgHiWhite).SprintFunc()
+	unmergedFmt := color.New(color.FgYellow).SprintFunc()
 
-	fmt.Printf("%s %s@%s %s%s %s%s %s%s %s",
+	return fmt.Sprintf("%s %s@%s %s %s %s",
 		branchGlyph,
-		branchFmt(Git.branch),
-		commitFmt(Git.commit),
-		//ahead/behind
-		func(n int) string {
-			if n > 0 {
-				return aheadFmt(" ", aheadArrow, n, " ")
-			} else {
-				return ""
+		branchFmt(pi.branch),
+		commitFmt(pi.commit[:7]),
+		func() string {
+			var buf bytes.Buffer
+			if pi.ahead > 0 {
+				buf.WriteString(aheadFmt(" ", aheadArrow, pi.ahead, " "))
 			}
-		}(Git.ahead),
-		func(n int) string {
-			if n > 0 {
-				return behindFmt(" ", behindArrow, n, " ")
-			} else {
-				return ""
+			if pi.behind > 0 {
+				buf.WriteString(behindFmt(" ", behindArrow, pi.behind, " "))
 			}
-		}(Git.behind),
-		// stats
-		// untracked
-		func(n int) string {
-			if n > 0 {
-				return untrackedFmt(untrackedGlyph)
+			return buf.String()
+		}(),
+		func() string {
+			var buf bytes.Buffer
+			if pi.untracked > 0 {
+				buf.WriteString(untrackedFmt(untrackedGlyph))
 			} else {
-				return ""
+				buf.WriteRune(' ')
 			}
-		}(Git.untracked),
-		// unmerged
-		func(n int) string {
-			if n > 0 {
-				return unmergedFmt(unmergedGlyph)
+			if pi.hasUnmerged() {
+				buf.WriteString(unmergedFmt(unmergedGlyph))
 			} else {
-				return ""
+				buf.WriteRune(' ')
 			}
-		}(Git.unmerged),
-		// modi
-		func(n int) string {
-			if n > 0 {
-				return modifiedFmt(modifiedGlyph)
+			if pi.hasModified() {
+				buf.WriteString(modifiedFmt(modifiedGlyph))
 			} else {
-				return ""
+				buf.WriteRune(' ')
 			}
-		}(Git.modified),
-		// del
-		func(n int) string {
-			if n > 0 {
-				return deletedFmt(deletedGlyph)
-			} else {
-				return ""
-			}
-		}(Git.deleted),
+			// TODO star glyph
+			return buf.String()
+		}(),
 		// dirty/clean
-		func(n int) string {
-			if n > 0 {
+		func() string {
+			if pi.isDirty() {
 				return dirtyFmt(dirtyGlyph)
 			} else {
 				return cleanFmt(cleanGlyph)
 			}
-		}(Git.dirty),
+		}(),
 	)
-}
-
-func execRevParse() (string, error) {
-	// get commit hash
-	cmd := exec.Command(gitbin, gitrevparse...)
-	out, err := cmd.Output()
-	if err != nil {
-		// if strings.Contains(err.Error(), "128") {
-		//	return "initial"
-		// } else {
-		//	panic(err)
-		// }
-		return "initial", err
-		// TODO: would be nice to be able to differentiate between not in git and before
-		// first commit
-	}
-
-	return string(out), nil
-}
-
-func execStatus() {
-	cmd := exec.Command(gitbin, gitstatus...)
-	stdout, err := cmd.StdoutPipe()
-	// catch pipe errors
-	if err != nil {
-		log.Printf("error opening stdout pipe: %s\n@ %s\n> %s)", err, cwd, cmd.Args)
-		return
-	}
-	if err := cmd.Start(); err != nil {
-		log.Printf("error opening stdout pipe: %s\n@ %s\n> %s)", err, cwd, cmd.Args)
-		return
-	}
-
-	stop := make(chan bool)
-	go readGitStdout(bufio.NewScanner(stdout), stop)
-	<-stop
-	cmd.Wait()
-
 }
 
 func init() {
 	flag.BoolVar(&debugFlag, "debug", false, "print output for debugging")
-	flag.BoolVar(&basicFlag, "basic", false, "print basic number output")
 	flag.BoolVar(&fmtFlag, "fmt", false, "print formatted output")
 	flag.Parse()
 
@@ -354,23 +187,37 @@ func init() {
 	cwd, _ = os.Getwd()
 }
 
-func main() {
-	out, err := execRevParse()
+func run() *PorcInfo {
+	gitOut, err := GetGitOutput(cwd)
 	if err != nil {
-		return
+		if err == ErrNotAGitRepo {
+			os.Exit(0)
+		}
+		fmt.Print("sry, no info :(")
+		os.Exit(1)
 	}
-	Git.commit = strings.TrimSuffix(string(out), "\n")
 
-	execStatus()
+	var porcInfo = new(PorcInfo)
+	if err := porcInfo.ParsePorcInfo(gitOut); err != nil {
+		fmt.Print("sry, no info :(")
+		os.Exit(1)
+	}
 
+	return porcInfo
+}
+
+func main() {
+	var out string
 	switch {
 	case debugFlag:
-		debugOutput()
-	case basicFlag:
-		basicOutput()
+		out = run().Debug()
 	case fmtFlag:
-		formattedOutput()
+		out = run().Fmt()
 	default:
 		flag.Usage()
+		fmt.Println("\nOutside of a repository there will be no output.")
+		os.Exit(1)
 	}
+
+	fmt.Fprint(os.Stdout, out)
 }
