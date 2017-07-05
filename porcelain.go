@@ -130,7 +130,12 @@ func (pi *PorcInfo) Fmt() string {
 	return fmt.Sprintf("%s %s@%s %s %s %s",
 		branchGlyph,
 		branchFmt(pi.branch),
-		commitFmt(pi.commit[:7]),
+		func() string {
+			if pi.commit == "(initial)" {
+				return commitFmt(pi.commit)
+			}
+			return commitFmt(pi.commit[:7])
+		}(),
 		func() string {
 			var buf bytes.Buffer
 			if pi.ahead > 0 {
