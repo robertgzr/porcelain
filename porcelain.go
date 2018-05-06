@@ -16,8 +16,10 @@ import (
 const logloc string = "/tmp/porcelain.log"
 
 var (
-	cwd                string
-	debugFlag, fmtFlag bool
+	cwd                     string
+	noColorFlag             bool
+	debugFlag, fmtFlag      bool
+	bashFmtFlag, zshFmtFlag bool
 )
 
 type GitArea struct {
@@ -110,9 +112,13 @@ func (pi *PorcInfo) Fmt() string {
 		behindArrow    string = "↓"
 	)
 
-	color.NoColor = false
-	color.EscapeZshPrompt = true
-
+	if noColorFlag {
+		color.NoColor = true
+	} else {
+		color.NoColor = false
+		color.EscapeBashPrompt = bashFmtFlag
+		color.EscapeZshPrompt = zshFmtFlag
+	}
 	branchFmt := color.New(color.FgBlue).SprintFunc()
 	commitFmt := color.New(color.FgGreen, color.Italic).SprintFunc()
 
@@ -177,21 +183,6 @@ func (pi *PorcInfo) Fmt() string {
 	)
 }
 
-func init() {
-	flag.BoolVar(&debugFlag, "debug", false, "print output for debugging")
-	flag.BoolVar(&fmtFlag, "fmt", false, "print formatted output")
-	flag.Parse()
-
-	logFd, err := os.OpenFile(logloc, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
-	if err != nil {
-		os.Exit(1)
-	}
-	log.SetOutput(logFd)
-	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
-
-	cwd, _ = os.Getwd()
-}
-
 func run() *PorcInfo {
 	gitOut, err := GetGitOutput(cwd)
 	if err != nil {
@@ -211,11 +202,27 @@ func run() *PorcInfo {
 	return porcInfo
 }
 
+func init() {
+	flag.BoolVar(&debugFlag, "debug", false, "write logs to file ("+logloc+")")
+	flag.BoolVar(&fmtFlag, "fmt", true, "print formatted output (default)")
+	flag.BoolVar(&bashFmtFlag, "bash", false, "escape fmt output for bash")
+	flag.BoolVar(&noColorFlag, "no-color", false, "print formatted output without color codes")
+	flag.BoolVar(&zshFmtFlag, "zsh", false, "escape fmt output for zsh")
+	flag.Parse()
+
+	logFd, err = os.OpenFile(logloc, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
+	if err != nil {
+	os.Exit(1)
+	}
+	log.SetOutput(logFd)
+	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
+
+	cwd, _ = os.Getwd()
+}
+
 func main() {
 	var out string
 	switch {
-	case debugFlag:
-		out = run().Debug()
 	case fmtFlag:
 		out = run().Fmt()
 	default:
