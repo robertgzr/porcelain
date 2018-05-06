@@ -1,0 +1,13 @@
+builds:
+  - binary: porcelain
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+archive:
+  format: tar.gz
+  replacements:
+    darwin: macOS
+  files:
+    - LICENSE
