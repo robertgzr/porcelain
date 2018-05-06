@@ -21,6 +21,7 @@ var (
 	noColorFlag             bool
 	debugFlag, fmtFlag      bool
 	bashFmtFlag, zshFmtFlag bool
+	tmuxFmtFlag             bool
 )
 
 type GitArea struct {
@@ -123,6 +124,7 @@ func (pi *PorcInfo) Fmt() string {
 		color.NoColor = false
 		color.EscapeBashPrompt = bashFmtFlag
 		color.EscapeZshPrompt = zshFmtFlag
+		color.TmuxMode = tmuxFmtFlag
 	}
 	branchFmt := color.New(color.FgBlue).SprintFunc()
 	commitFmt := color.New(color.FgGreen, color.Italic).SprintFunc()
@@ -217,6 +219,7 @@ func init() {
 	flag.BoolVar(&bashFmtFlag, "bash", false, "escape fmt output for bash")
 	flag.BoolVar(&noColorFlag, "no-color", false, "print formatted output without color codes")
 	flag.BoolVar(&zshFmtFlag, "zsh", false, "escape fmt output for zsh")
+	flag.BoolVar(&tmuxFmtFlag, "tmux", false, "escape fmt output for tmux")
 	flag.StringVar(&cwd, "path", "", "show output for path instead of the working directory")
 
 	logtostderr := flag.Bool("logtostderr", false, "write logs to stderr")
