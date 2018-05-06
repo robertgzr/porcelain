@@ -127,7 +127,7 @@ func (pi *PorcInfo) Fmt() string {
 	branchFmt := color.New(color.FgBlue).SprintFunc()
 	commitFmt := color.New(color.FgGreen, color.Italic).SprintFunc()
 
-	aheadFmt := color.New(color.Faint, color.BgCyan, color.FgBlack).SprintFunc()
+	aheadFmt := color.New(color.Faint, color.BgYellow, color.FgBlack).SprintFunc()
 	behindFmt := color.New(color.Faint, color.BgRed, color.FgWhite).SprintFunc()
 
 	modifiedFmt := color.New(color.FgBlue).SprintFunc()
@@ -136,7 +136,7 @@ func (pi *PorcInfo) Fmt() string {
 	cleanFmt := color.New(color.FgGreen).SprintFunc()
 
 	untrackedFmt := color.New(color.Faint).SprintFunc()
-	unmergedFmt := color.New(color.FgYellow).SprintFunc()
+	unmergedFmt := color.New(color.FgCyan).SprintFunc()
 
 	return fmt.Sprintf("%s %s@%s %s %s %s",
 		branchGlyph,
