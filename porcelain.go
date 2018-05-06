@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -73,7 +74,7 @@ func (pi *PorcInfo) hasUnmerged() bool {
 	}
 	gitDir, err := PathToGitDir(cwd)
 	if err != nil {
-		log.Println(cwd, err)
+		log.Printf("error calling PathToGitDir: %s", err)
 		return false
 	}
 	// TODO figure out if output of MERGE_HEAD can be useful
@@ -81,7 +82,7 @@ func (pi *PorcInfo) hasUnmerged() bool {
 		if os.IsNotExist(err) {
 			return false
 		}
-		log.Println(err)
+		log.Printf("error reading MERGE_HEAD: %s", err)
 		return false
 	} else {
 		return true
@@ -102,6 +103,8 @@ func (pi *PorcInfo) Debug() string {
 // TODO should be configurable by the user
 //
 func (pi *PorcInfo) Fmt() string {
+	log.Printf("formatting output: %s", pi.Debug())
+
 	var (
 		branchGlyph   string = ""
 		modifiedGlyph string = "Δ"
@@ -188,10 +191,11 @@ func (pi *PorcInfo) Fmt() string {
 func run() *PorcInfo {
 	gitOut, err := GetGitOutput(cwd)
 	if err != nil {
+		log.Printf("error: %s", err)
 		if err == ErrNotAGitRepo {
 			os.Exit(0)
 		}
-		fmt.Print("sry, no info :(")
+		fmt.Printf("error: %s", err)
 		os.Exit(1)
 	}
 
@@ -199,7 +203,8 @@ func run() *PorcInfo {
 	porcInfo.workingDir = cwd
 
 	if err := porcInfo.ParsePorcInfo(gitOut); err != nil {
-		fmt.Print("sry, no info :(")
+		log.Printf("error: %s", err)
+		fmt.Printf("error: %s", err)
 		os.Exit(1)
 	}
 
@@ -213,14 +218,28 @@ func init() {
 	flag.BoolVar(&noColorFlag, "no-color", false, "print formatted output without color codes")
 	flag.BoolVar(&zshFmtFlag, "zsh", false, "escape fmt output for zsh")
 	flag.StringVar(&cwd, "path", "", "show output for path instead of the working directory")
+
+	logtostderr := flag.Bool("logtostderr", false, "write logs to stderr")
 	flag.Parse()
 
-	logFd, err = os.OpenFile(logloc, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
-	if err != nil {
-	os.Exit(1)
+	if debugFlag {
+		var (
+			err   error
+			logFd io.Writer
+		)
+		if *logtostderr {
+			logFd = os.Stderr
+		} else {
+			logFd, err = os.OpenFile(logloc, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
+			if err != nil {
+				os.Exit(1)
+			}
+		}
+		log.SetOutput(logFd)
+		log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
+	} else {
+		log.SetOutput(ioutil.Discard)
 	}
-	log.SetOutput(logFd)
-	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
 
 	if cwd == "" {
 		cwd, _ = os.Getwd()
@@ -228,6 +247,9 @@ func init() {
 }
 
 func main() {
+	log.Println("running porcelain...")
+	log.Println("in directory:", cwd)
+
 	var out string
 	switch {
 	case fmtFlag:

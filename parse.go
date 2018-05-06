@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -15,6 +16,8 @@ func consumeNext(s *bufio.Scanner) string {
 }
 
 func (pi *PorcInfo) ParsePorcInfo(r io.Reader) error {
+	log.Println("parsing git output")
+
 	var err error
 	var s = bufio.NewScanner(r)
 
