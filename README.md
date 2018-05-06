@@ -24,8 +24,19 @@ Definitions taken from: https://www.kernel.org/pub/software/scm/git/docs/gitglos
 - `✘`  : dirty : working tree contains uncommited but staged changes
 - `✔`  : clean : working tree corresponds to the revision referenced by HEAD
 
+## Usage
+
+Run `porcelain` without any options to get the colorful output :)
+For all supported options see `porcelain -h`.
+
+I run this in ZSH to fill my `RPROMPT`, for this the terminal color codes need to be escaped.
+Use the `-bash` and `-zsh` flags to do that.
+
+To use it in your tmux statusline you can turn off colors with `no-colors` or switch to tmux color formatting `-tmux`.
+
 ---
 
 The screenshots use:
 * [Solarized Dark](http://ethanschoonover.com/solarized) colorscheme
 * [Iosevka](https://github.com/be5invis/Iosevka) font
+
