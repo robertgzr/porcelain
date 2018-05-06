@@ -51,6 +51,8 @@ func (a *GitArea) hasChanged() bool {
 }
 
 type PorcInfo struct {
+	workingDir string
+
 	branch   string
 	commit   string
 	remote   string
@@ -194,6 +196,8 @@ func run() *PorcInfo {
 	}
 
 	var porcInfo = new(PorcInfo)
+	porcInfo.workingDir = cwd
+
 	if err := porcInfo.ParsePorcInfo(gitOut); err != nil {
 		fmt.Print("sry, no info :(")
 		os.Exit(1)
@@ -208,6 +212,7 @@ func init() {
 	flag.BoolVar(&bashFmtFlag, "bash", false, "escape fmt output for bash")
 	flag.BoolVar(&noColorFlag, "no-color", false, "print formatted output without color codes")
 	flag.BoolVar(&zshFmtFlag, "zsh", false, "escape fmt output for zsh")
+	flag.StringVar(&cwd, "path", "", "show output for path instead of the working directory")
 	flag.Parse()
 
 	logFd, err = os.OpenFile(logloc, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModePerm)
@@ -217,7 +222,9 @@ func init() {
 	log.SetOutput(logFd)
 	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile)
 
-	cwd, _ = os.Getwd()
+	if cwd == "" {
+		cwd, _ = os.Getwd()
+	}
 }
 
 func main() {
