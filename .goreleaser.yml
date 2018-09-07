@@ -9,3 +9,4 @@ archive:
   format: tar.gz
   files:
     - LICENSE
+    - porcelain.tmux

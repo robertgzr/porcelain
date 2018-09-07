@@ -34,6 +34,14 @@ Use the `-bash` and `-zsh` flags to do that.
 
 To use it in your tmux statusline you can turn off colors with `no-colors` or switch to tmux color formatting `-tmux`.
 
+If you're using [`tpm`](https://github.com/tmux-plugins/tpm) you can install it as a plugin:
+```tmux
+set -g @plugin 'robertgzr/porcelain'
+```
+And then add `#{porcelain}` to your statusline configuration.
+
+This installs the latest version into the tpm plugin directory.
+
 ---
 
 The screenshots use:
