@@ -24,6 +24,13 @@ Definitions taken from: https://www.kernel.org/pub/software/scm/git/docs/gitglos
 - `✘`  : dirty : working tree contains uncommited but staged changes
 - `✔`  : clean : working tree corresponds to the revision referenced by HEAD
 
+### Notice
+In some fonts individual characters may look different, so it is important to use a `powerline` font. They are avalable:
+
+- [From Source](https://github.com/powerline/fonts)
+- Via apt package: `apt install fonts-powerline`
+- Via dnf package: `dnf install powerline-fonts`
+
 ## Usage
 
 Run `porcelain` without any options to get the colorful output :)
@@ -47,4 +54,3 @@ This installs the latest version into the tpm plugin directory.
 The screenshots use:
 * [Solarized Dark](http://ethanschoonover.com/solarized) colorscheme
 * [Iosevka](https://github.com/be5invis/Iosevka) font
-
