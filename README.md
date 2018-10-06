@@ -25,11 +25,11 @@ Definitions taken from: https://www.kernel.org/pub/software/scm/git/docs/gitglos
 - `✔`  : clean : working tree corresponds to the revision referenced by HEAD
 
 ### Notice
-In some fonts individual characters may look different, so it is important to use a `powerline` font. They are avalable:
+In some fonts individual characters may look different, so it is important to use a `powerline` font. They are available:
 
 - [From Source](https://github.com/powerline/fonts)
-- Via apt package: `apt install fonts-powerline`
-- Via dnf package: `dnf install powerline-fonts`
+- via apt package: `apt install fonts-powerline`
+- via dnf package: `dnf install powerline-fonts`
 
 ## Usage
 
