@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 const notRepoStatus string = "exit status 128"
@@ -16,6 +17,9 @@ var ErrNotAGitRepo error = errors.New("not a git repo")
 
 func GetGitOutput(cwd string) (io.Reader, error) {
 	if ok, err := IsInsideWorkTree(cwd); err != nil {
+		if err == ErrNotAGitRepo {
+			return nil, ErrNotAGitRepo
+		}
 		log.Printf("error detecting work tree: %s", err)
 		return nil, err
 	} else if !ok {
@@ -29,9 +33,6 @@ func GetGitOutput(cwd string) (io.Reader, error) {
 	log.Printf("running %q", cmd.Args)
 
 	if err := cmd.Run(); err != nil {
-		if cmd.ProcessState.String() == notRepoStatus {
-			return nil, ErrNotAGitRepo
-		}
 		return nil, err
 	}
 
@@ -57,6 +58,16 @@ func IsInsideWorkTree(cwd string) (bool, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+				if status.ExitStatus() == 128 {
+					return false, ErrNotAGitRepo
+				}
+			}
+		}
+		if cmd.ProcessState.String() == notRepoStatus {
+			return false, ErrNotAGitRepo
+		}
 		return false, err
 	}
 	return strconv.ParseBool(strings.TrimSpace(string(out)))
