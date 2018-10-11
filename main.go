@@ -13,9 +13,9 @@ import (
 const logloc string = "/tmp/porcelain.log"
 
 var (
-	buildRev  string = "invalid"
-	buildTag  string = "invalid"
-	buildTime string = "invalid"
+	commit  string = "invalid"
+	version string = "invalid"
+	date    string = "invalid"
 )
 
 var (
@@ -41,7 +41,7 @@ func init() {
 	flag.Parse()
 
 	if versionFlag {
-		fmt.Printf("porcelain version %s (%s)\nbuilt %s\n", buildTag, buildRev, buildTime)
+		fmt.Printf("porcelain version %s (%s)\nbuilt %s\n", version, commit, date)
 		os.Exit(0)
 	}
 

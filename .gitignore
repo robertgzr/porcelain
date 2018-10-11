@@ -1,1 +1,3 @@
 porcelain
+dist/
+go.sum
