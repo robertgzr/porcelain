@@ -3,8 +3,7 @@
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PORCELAIN_BIN="$CURRENT_DIR/porcelain"
 
-global_porcelain=""
-porcelain_status="#($PORCELAIN_BIN -debug -tmux -path '#{pane_current_path}')"
+porcelain_status="#($PORCELAIN_BIN -tmux -path '#{pane_current_path}')"
 porcelain_interpolation_string="\#{porcelain}"
 
 do_interpolation() {
@@ -26,14 +25,6 @@ install() {
 }
 
 main() {
-    global_porcelain="$(command -v porcelain)"
-    if [[ -f "$global_porcelain" ]]
-    then
-        PORCELAIN_BIN=$global_porcelain
-        install
-        exit 0
-    fi
-
     if ! [[ -f "$PORCELAIN_BIN" ]]
     then
         curl -sL "$(curl -s https://api.github.com/repos/robertgzr/porcelain/releases/latest | grep "browser_download_url" | grep "$(uname | tr '[:upper:]' '[:lower:]')"| cut -d\" -f4)" |\
