@@ -39,3 +39,30 @@ func TestParseVersionFail(t *testing.T) {
 		t.Fatalf("minium version detection failed, %s < 2.20.1", printVersion(v))
 	}
 }
+
+func TestParseHeader(t *testing.T) {
+	r := strings.NewReader(`# branch.oid c6b881773218df5478329d8e5eb43b439c3686a3
+# branch.head plumbing
+# branch.ab +100 -100
+`)
+
+	p := gitParser{rawbuf: r}
+	p.Init(r)
+	h, err := p.parseHeaders()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if h.branch != "plumbing" {
+		t.Fatalf("wrong branch, expected 'plumbing', got '%s'", h.branch)
+	}
+	if h.commit != "c6b881773218df5478329d8e5eb43b439c3686a3" {
+		t.Fatalf("wrong commit, expected 'c6b881773218df5478329d8e5eb43b439c3686a3', got '%s'", h.commit)
+	}
+	if h.ahead != 100 {
+		t.Fatalf("wrong ahead, expected 100, got %d", h.ahead)
+	}
+	if h.behind != 100 {
+		t.Fatalf("wrong behind, expected 100, got %d", h.behind)
+	}
+}
