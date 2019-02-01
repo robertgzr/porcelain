@@ -10,7 +10,7 @@
 // - do we have unstaged changes?
 // - do we have staged but uncommited changes?
 //
-package main
+package porcelain
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ import (
 
 var gitbin string
 
-func InitGit() (err error) {
+func Check() (err error) {
 	gitbin, err = exec.LookPath("git")
 	if err != nil {
 		return ErrBinaryNotFound
@@ -47,6 +47,15 @@ func InitGit() (err error) {
 	}
 	return nil
 }
+
+func CurrentBranch() (string, error) { return "FAIL", nil }
+func CurrentCommit() (string, error) { return "FAIL", nil }
+func CommitsAhead() (int, error)     { return 0, nil }
+func CommitsBehind() (int, error)    { return 0, nil }
+func HasUntracked() (bool, error)    { return false, nil }
+func HasUnmerged() (bool, error)     { return false, nil }
+func HasUnstaged() (bool, error)     { return false, nil }
+func HasStaged() (bool, error)       { return false, nil }
 
 var (
 	ErrBinaryNotFound = errors.New("git binary not found")
