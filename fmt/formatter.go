@@ -47,7 +47,7 @@ func (f *Formatter) Format(w io.Writer, repo porcelain.RepoState) {
 	color.New(f.branchColor...).Fprint(w, repo.Branch)
 
 	color.New(f.fgColor...).Fprint(w, "@")
-	color.New(f.commitColor...).Fprint(w, repo.Commit)
+	color.New(f.commitColor...).Fprint(w, repo.Commit[:7])
 	fmt.Fprint(w, " ")
 
 	if repo.CommitsAhead > 0 {
