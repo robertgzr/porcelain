@@ -16,6 +16,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -112,10 +113,46 @@ func CommitsBehind() (int, error) {
 	p := NewParser(bytes.NewReader(gitporcelain))
 	return p.ParseBehind()
 }
-func HasUntracked() (bool, error) { return false, nil }
-func HasUnmerged() (bool, error)  { return false, nil }
-func HasUnstaged() (bool, error)  { return false, nil }
-func HasStaged() (bool, error)    { return false, nil }
+func HasUntracked() (bool, error) {
+	// buf, err := gitLsFiles("--output")
+	// if err != nil {
+	// 	return false, err
+	// }
+	// if len(buf) == 0 {
+	// 	return false, nil
+	// }
+	return true, nil
+}
+func HasUnmerged() (bool, error) {
+	// buf, err := gitLsFiles("--unmerged")
+	// if err != nil {
+	// 	return false, err
+	// }
+	// if len(buf) == 0 {
+	// 	return false, nil
+	// }
+	return true, nil
+}
+func HasUnstaged() (bool, error) {
+	// buf, err := gitLsFiles("--modified")
+	// if err != nil {
+	// 	return false, err
+	// }
+	// if len(buf) == 0 {
+	// 	return false, nil
+	// }
+	return true, nil
+}
+func HasStaged() (bool, error) {
+	// buf, err := gitLsFiles("--stage")
+	// if err != nil {
+	// 	return false, err
+	// }
+	// if len(buf) == 0 {
+	// 	return false, nil
+	// }
+	return true, nil
+}
 
 func getPorcelain() (err error) {
 	if gitdir == "" {
@@ -125,6 +162,18 @@ func getPorcelain() (err error) {
 	c.Dir = gitdir
 	gitporcelain, err = c.Output()
 	return
+}
+
+func gitLsFiles(flags ...string) (buf []byte, err error) {
+	if gitdir == "" {
+		return nil, ErrUnchecked
+	}
+	args := []string{"ls-files"}
+	args = append(args, flags...)
+	c := exec.Command(gitbin, args...)
+	c.Dir = gitdir
+	log.Printf("%#+v", c)
+	return c.Output()
 }
 
 type (
