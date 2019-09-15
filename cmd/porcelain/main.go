@@ -57,8 +57,8 @@ func main() {
 	log.SetOutput(ioutil.Discard)
 
 	if flagPrintVersion {
-		stdout.Printf("porcelain version %s (%s)\nbuilt %s\n",
-			porcelain.BuildVersion, porcelain.BuildCommit, porcelain.BuildTimestamp)
+		stdout.Printf("porcelain version %s (%s, %s)\n",
+			BuildVersion, BuildCommit, BuildTimestamp)
 		os.Exit(0)
 	}
 

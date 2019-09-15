@@ -1,6 +1,6 @@
-package porcelain
+package main
 
-const (
+var (
 	BuildVersion   = ""
 	BuildCommit    = ""
 	BuildTimestamp = ""
