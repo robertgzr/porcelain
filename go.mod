@@ -1,8 +1,9 @@
 module github.com/robertgzr/porcelain
 
+go 1.13
+
 require (
-	github.com/mattn/go-colorable v0.0.9 // indirect
-	github.com/mattn/go-isatty v0.0.4 // indirect
-	github.com/robertgzr/color v0.0.0-20180506014805-e601f373894f
-	golang.org/x/sys v0.0.0-20180504064212-6f686a352de6 // indirect
+	github.com/mattn/go-isatty v0.0.12 // indirect
+	github.com/robertgzr/color v1.0.1-0.20200126142858-9c6f98750436
+	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
 )
