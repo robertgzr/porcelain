@@ -27,7 +27,7 @@ var (
 	versionFlag             bool
 )
 
-func init() {
+func main() {
 	flag.BoolVar(&debugFlag, "debug", false, "write logs to file ("+logloc+")")
 	flag.BoolVar(&fmtFlag, "fmt", true, "print formatted output (default)")
 	flag.BoolVar(&bashFmtFlag, "bash", false, "escape fmt output for bash")
@@ -67,9 +67,7 @@ func init() {
 	if cwd == "" {
 		cwd, _ = os.Getwd()
 	}
-}
 
-func main() {
 	log.Println("running porcelain...")
 	log.Println("in directory:", cwd)
 
