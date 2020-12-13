@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/robertgzr/porcelain"
 )
 
 // TODO allow custom log location
@@ -74,7 +76,7 @@ func main() {
 	var out string
 	switch {
 	case fmtFlag:
-		out = run().Fmt()
+		out = porcelain.Run(cwd).Fmt(cwd, noColorFlag, bashFmtFlag, zshFmtFlag, tmuxFmtFlag)
 	default:
 		flag.Usage()
 		fmt.Println("\nOutside of a repository there will be no output.")

@@ -16,7 +16,7 @@ GO_LDFLAGS += -X main.date=$(shell date -u -I) -X main.commit=$(REV) -X main.ver
 all: porcelain porcelain.1
 
 porcelain:
-	$(GO) build $(GOFLAGS) -ldflags "$(GO_LDFLAGS)"
+	$(GO) build $(GOFLAGS) -ldflags "$(GO_LDFLAGS)" ./cmd/$@
 
 porcelain.1: porcelain.1.scd
 	$(SCDOC) < $< >$@

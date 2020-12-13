@@ -1,4 +1,4 @@
-package main
+package porcelain
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ type GitArea struct {
 	copied   int
 }
 
-func (a *GitArea) hasChanged() bool {
+func (a *GitArea) HasChanged() bool {
 	var changed bool
 	if a.added != 0 {
 		changed = true
@@ -56,7 +56,7 @@ type PorcInfo struct {
 	Staged   GitArea
 }
 
-func (pi *PorcInfo) hasUnmerged() bool {
+func (pi *PorcInfo) HasUnmerged(cwd string) bool {
 	if pi.unmerged > 0 {
 		return true
 	}
@@ -76,11 +76,11 @@ func (pi *PorcInfo) hasUnmerged() bool {
 		return true
 	}
 }
-func (pi *PorcInfo) hasModified() bool {
-	return pi.Unstaged.hasChanged()
+func (pi *PorcInfo) HasModified() bool {
+	return pi.Unstaged.HasChanged()
 }
-func (pi *PorcInfo) isDirty() bool {
-	return pi.Staged.hasChanged()
+func (pi *PorcInfo) IsDirty() bool {
+	return pi.Staged.HasChanged()
 }
 
 func (pi *PorcInfo) Debug() string {
@@ -90,7 +90,7 @@ func (pi *PorcInfo) Debug() string {
 // Fmt formats the output for the shell
 // TODO should be configurable by the user
 //
-func (pi *PorcInfo) Fmt() string {
+func (pi *PorcInfo) Fmt(cwd string, noColorFlag, bashFmtFlag, zshFmtFlag, tmuxFmtFlag bool) string {
 	log.Printf("formatting output: %s", pi.Debug())
 
 	var (
@@ -153,12 +153,12 @@ func (pi *PorcInfo) Fmt() string {
 			} else {
 				buf.WriteRune(' ')
 			}
-			if pi.hasUnmerged() {
+			if pi.HasUnmerged(cwd) {
 				buf.WriteString(unmergedFmt(unmergedGlyph))
 			} else {
 				buf.WriteRune(' ')
 			}
-			if pi.hasModified() {
+			if pi.HasModified() {
 				buf.WriteString(modifiedFmt(modifiedGlyph))
 			} else {
 				buf.WriteRune(' ')
@@ -168,7 +168,7 @@ func (pi *PorcInfo) Fmt() string {
 		}(),
 		// dirty/clean
 		func() string {
-			if pi.isDirty() {
+			if pi.IsDirty() {
 				return dirtyFmt(dirtyGlyph)
 			} else {
 				return cleanFmt(cleanGlyph)
@@ -177,7 +177,7 @@ func (pi *PorcInfo) Fmt() string {
 	)
 }
 
-func run() *PorcInfo {
+func Run(cwd string) *PorcInfo {
 	gitOut, err := GetGitOutput(cwd)
 	if err != nil {
 		log.Printf("error: %s", err)
