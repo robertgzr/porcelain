@@ -1,4 +1,5 @@
-module github.com/robertgzr/porcelain
+// module github.com/robertgzr/porcelain
+module github.com/stevegt/porcelain
 
 go 1.13
 

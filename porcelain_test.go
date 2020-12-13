@@ -1,4 +1,4 @@
-package main
+package porcelain
 
 import (
 	"strings"
@@ -13,7 +13,7 @@ func TestFmtOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if out := pi.Fmt(); out != expectedFmtOutput {
+	if out := pi.Fmt("", false, false, false, false); out != expectedFmtOutput {
 		t.Logf("\nexpected:\n%s\ngot:\n%s\n", expectedFmtOutput, out)
 		t.FailNow()
 	}
