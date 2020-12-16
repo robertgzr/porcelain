@@ -12,6 +12,14 @@ With a working Go environment do: `go get -u github.com/robertgzr/porcelain`
 
 Binaries can be found [here](https://github.com/robertgzr/porcelain/releases).
 
+## Installation
+
+```
+make install
+```
+
+On Gentoo there is an ebuild in my [personal overlay](https://git.sr.ht/~robertgzr/portage/tree/master/app-misc/porcelain).
+
 ## Output explained:
 
  ` <branch>@<commit> [↑/↓ <ahead/behind count>][untracked][unmerged][modified][dirty/clean]`
