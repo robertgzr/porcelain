@@ -26,7 +26,11 @@ func (pi *PorcInfo) ParsePorcInfo(r io.Reader) error {
 			continue
 		}
 
-		pi.ParseLine(s.Text())
+		// NOTE we only return the last error, probably should fail early?
+		err = pi.ParseLine(s.Text())
+		if err != nil {
+			log.Printf("error parsing %q: %v", s.Text(), err)
+		}
 	}
 
 	return err
@@ -37,14 +41,24 @@ func (pi *PorcInfo) ParseLine(line string) error {
 	// switch to a word based scanner
 	s.Split(bufio.ScanWords)
 
+	var err error
 	for s.Scan() {
 		switch s.Text() {
 		case "#":
-			pi.parseBranchInfo(s)
+			err = pi.parseBranchInfo(s)
+			if err != nil {
+				log.Printf("error parsing branch: %v", err)
+			}
 		case "1":
-			pi.parseTrackedFile(s)
+			err = pi.parseTrackedFile(s)
+			if err != nil {
+				log.Printf("error parsing tracked file: %v", err)
+			}
 		case "2":
-			pi.parseRenamedFile(s)
+			err = pi.parseRenamedFile(s)
+			if err != nil {
+				log.Printf("error parsing renamed file: %v", err)
+			}
 		case "u":
 			pi.unmerged++
 		case "?":
@@ -66,6 +80,9 @@ func (pi *PorcInfo) parseBranchInfo(s *bufio.Scanner) (err error) {
 			pi.upstream = consumeNext(s)
 		case "branch.ab":
 			err = pi.parseAheadBehind(s)
+			if err != nil {
+				log.Printf("error parsing branch.ab: %v", err)
+			}
 		}
 	}
 	return err
@@ -95,10 +112,14 @@ func (pi *PorcInfo) parseAheadBehind(s *bufio.Scanner) error {
 func (pi *PorcInfo) parseTrackedFile(s *bufio.Scanner) error {
 	// uses the word based scanner from ParseLine
 	var index int
+	var err error
 	for s.Scan() {
 		switch index {
 		case 0: // xy
-			pi.parseXY(s.Text())
+			err = pi.parseXY(s.Text())
+			if err != nil {
+				log.Printf("error parsing XY: %q: %v", s.Text(), err)
+			}
 		default:
 			continue
 			// case 1: // sub
