@@ -8,8 +8,7 @@ import (
 	"log"
 	"os"
 
-	// "github.com/robertgzr/porcelain"
-	"github.com/stevegt/porcelain"
+	"github.com/robertgzr/porcelain"
 )
 
 // TODO allow custom log location
