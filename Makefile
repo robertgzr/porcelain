@@ -21,6 +21,12 @@ porcelain:
 porcelain.1: porcelain.1.scd
 	$(SCDOC) < $< >$@
 
+
+.PHONY: validate
+validate: GOLANGCI_LINT = golangci-lint
+validate:
+	$(GOLANGCI_LINT) run
+
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 MANDIR ?= $(PREFIX)/share/man
