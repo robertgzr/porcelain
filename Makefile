@@ -1,31 +1,31 @@
 .POSIX:
 .SUFFIXES:
 
-GO ?= go
-RM ?= rm
-SCDOC ?= scdoc
-
-REV ?= $(shell git rev-parse --short HEAD)
+REV     ?= $(shell git rev-parse --short HEAD)
 VERSION ?= $(shell git describe --tags --long)
 
-GOFLAGS     =
-GO_LDFLAGS ?= -s -w
-GO_LDFLAGS += -X main.date=$(shell date -u -I) -X main.commit=$(REV) -X main.version=$(VERSION)
+GO      ?= go
+GOFLAGS ?=
 
-.PHONY: all
-all: porcelain porcelain.1
-
+porcelain: GO_LDFLAGS ?= -s -w
+porcelain: GO_LDFLAGS += -X main.date=$(shell date -u -I)
+porcelain: GO_LDFLAGS += -X main.commit=$(REV)
+porcelain: GO_LDFLAGS += -X main.version=$(VERSION)
 porcelain:
 	$(GO) build $(GOFLAGS) -ldflags "$(GO_LDFLAGS)" ./cmd/$@
 
+porcelain.1: SCDOC ?= scdoc
 porcelain.1: porcelain.1.scd
 	$(SCDOC) < $< >$@
 
-
 .PHONY: validate
-validate: GOLANGCI_LINT = golangci-lint
 validate:
-	$(GOLANGCI_LINT) run
+	golangci-lint run -j$(shell nproc) || $(GO) vet $(GOFLAGS)
+
+.PHONY: check
+check: GO_TESTFLAGS ?= -cover
+check:
+	$(GO) test $(GOFLAGS) $(GO_TESTFLAGS) ./...
 
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
@@ -33,11 +33,11 @@ MANDIR ?= $(PREFIX)/share/man
 
 .PHONY: install
 install: porcelain porcelain.1
-	mkdir -p $(DESTDIR)$(BINDIR)
-	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	cp -f porcelain $(DESTDIR)$(BINDIR)
-	cp -f porcelain.1 $(DESTDIR)$(MANDIR)/man1
+	test -d $(DESTDIR)$(BINDIR) || install -Dm 00755 -d $(DESTDIR)$(BINDIR)
+	install -m 00755 porcelain $(DESTDIR)$(BINDIR)/.
+	test -d $(DESTDIR)$(MANDIR)/man1 || install -Dm 00755 -d $(DESTDIR)$(MANDIR)/man1
+	install -m 00755 porcelain.1 $(DESTDIR)$(MANDIR)/man1/.
 
 .PHONY: clean
 clean:
-	$(RM) porcelain porcelain.1
+	rm -fv porcelain porcelain.1
