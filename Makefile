@@ -38,6 +38,11 @@ install: porcelain porcelain.1
 	test -d $(DESTDIR)$(MANDIR)/man1 || install -Dm 00755 -d $(DESTDIR)$(MANDIR)/man1
 	install -m 00755 porcelain.1 $(DESTDIR)$(MANDIR)/man1/.
 
+.PHONY: release
+release: GORELEASER ?= goreleaser
+release: porcelain.1
+	$(GORELEASER) release
+
 .PHONY: clean
 clean:
-	rm -fv porcelain porcelain.1
+	rm -fv dist/. porcelain porcelain.1

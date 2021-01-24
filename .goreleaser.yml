@@ -1,12 +1,16 @@
 builds:
-  - binary: porcelain
+  - main: cmd/porcelain/main.go
     goos:
       - linux
       - darwin
     goarch:
       - amd64
-archive:
-  format: tar.gz
-  files:
-    - LICENSE
-    - porcelain.tmux
+      - arm64
+archives:
+  - format: tar.gz
+    files:
+      - LICENSE
+      - porcelain.tmux
+      - porcelain.1
+signs:
+  - artifacts: checksum
